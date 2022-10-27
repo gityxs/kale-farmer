@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="favicon.ico" />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="description"
+      content="KL farmer"
+    />
+    <style type="text/css">
+      html {
+        background: #333;
+        color: white;
+      }
+
+      html,
+      html textarea,
+      html button {
+        font-size: 24px !important;
+      }
+
+      @media screen and (max-width: 1200px) {
+        html,
+        html textarea,
+        html button {
+          font-size: 16px !important;
+        }
+      }
+
+      @media screen and (max-width: 900px) {
+        html,
+        html textarea,
+        html button {
+          font-size: 12px !important;
+        }
+      }
+      * {
+          touch-action: manipulation;
+      }
+
+      body {
+        max-width: 64rem;
+        padding: 0.25rem;
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        margin: auto;
+      }
+
+      #root {
+        display: grid;
+        grid-template-areas:
+          "CON STA"
+          "GAR UPG"
+          "GAR UPG"
+          "GAR UPG";
+
+          width: 100%;
+          height: 100%;
+          /* grid-template-rows: 1fr 3fr; */
+          grid-template-columns: 1fr 1fr;
+          grid-template-rows: 12rem 1fr;
+      }
+
+      .consolewrapper {
+        grid-area: CON;
+        position: relative;
+        display: grid;
+        border: 1px solid white;
+      }
+
+      #console {
+        resize: none;
+        border: none;
+        background: black;
+        color: white;
+      }
+
+      #stats {
+        grid-area: STA;
+        background: #222;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        text-align: center;
+      }
+
+      #stats > p {
+        display: block;
+        margin: 0;
+      }
+
+      #currency,
+      #workers {
+        font-size: 3rem;
+        position: relative;
+      }
+
+      #currency::before {
+        content: attr(data-amount);
+        color: white;
+        margin-right: 2rem;
+      }
+
+      #currency[data-bump="tick"],
+      #currency[data-bump="tick"]::before {
+        animation: currency-bump 1s;
+        animation-iteration-count: 1;
+      }
+
+      #currency[data-bump="tock"],
+      #currency[data-bump="tock"]::before {
+        animation: currency-bump-two 1s;
+        animation-iteration-count: 1;
+      }
+
+      @keyframes currency-bump {
+        0% {
+          font-size: 3.5rem;
+          color: green;
+        }
+        100% {
+          font-size: 3rem;
+          color: white;
+        }
+      }
+      @keyframes currency-bump-two {
+        0% {
+          font-size: 3.5rem;
+          color: green;
+        }
+        100% {
+          font-size: 3rem;
+          color: white;
+        }
+      }
+
+      #garden {
+        grid-area: GAR;
+        padding: 0.25rem;
+        display: grid;
+        grid-template-columns: repeat(4, 8rem);
+        grid-auto-rows: 9rem;
+        min-height: 8rem;
+      }
+
+      #garden > *:not(:first-child) {
+        margin-left: 0.25rem;
+      }
+      #garden > *:not(:last-child) {
+        margin-right: 0.25rem;
+      }
+
+      #upgrades {
+        grid-area: UPG;
+        text-align: center;
+      }
+
+      .root-ui-elem {
+        opacity: 0;
+        transition: opacity 1s;
+        visibility: hidden;
+      }
+
+      .visible {
+        visibility: visible;
+        opacity: 1;
+        transition: opacity 5s;
+      }
+
+      .soil-square {
+        width: 8rem;
+        height: 8rem;
+      }
+
+      .soil-square.plant {
+        display: none;
+        position: relative;
+        background: radial-gradient(circle at center, #0f0 10%, transparent 70%);
+        transition: background-size .5s, border-color 0.25s;
+        transition-timing-function: ease-out;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: 0.1rem 0.1rem;
+        border-radius: 5rem;
+        border: 1px solid transparent;
+      }
+
+      .icon-appear-anim {
+        opacity: 0.0;
+        pointer-events: none;
+        position: absolute;
+        text-align: center;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        font-size: 4rem;
+        animation: icon-appear-anim-fade 1s;
+        user-select: none;
+      }
+
+      @keyframes icon-appear-anim-fade {
+        0% { opacity: 1; }
+        100% { opacity: 0; }
+      }
+
+      .soil-square.plant.purchased {
+        display: block;
+      }
+
+      .soil-square.plant[data-growth="0"] {
+        background-size: 0.1rem 0.1rem;
+        background-image: radial-gradient(circle at center, #ff0 10%, transparent 70%);
+      }
+      .soil-square.plant[data-growth="25"] {
+        background-size: 25% 25%;
+        background-image: radial-gradient(circle at center, #af0 10%, transparent 70%);
+      }
+      .soil-square.plant[data-growth="50"] {
+        background-size: 50% 50%;
+        background-image: radial-gradient(circle at center, #8f0 10%, transparent 70%);
+      }
+      .soil-square.plant[data-growth="75"] {
+        background-size: 75% 75%;
+        background-image: radial-gradient(circle at center, #6f0 10%, transparent 70%);
+      }
+      .soil-square.plant[data-growth="100"] {
+        background-size: 100% 100%;
+      }
+      .soil-square.plant[data-growth="100"]::after {
+        content: "🥬";
+        font-size: 3rem;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        height: 100%;
+        animation: fade-in 1s;
+        animation-iteration-count: 1;
+      }
+      .soil-square.plant[data-growth="100"]:hover {
+        cursor: pointer;
+        border-color: green;
+      }
+      .soil-square.buy {
+        margin: 2rem 1rem;
+        width: 6rem;
+        height: 4rem;
+        position: relative;
+        left: 1rem;
+        border: 1px solid gray;
+        border-radius: 1rem;
+        display: flex;
+        text-align: center;
+        justify-content: center;
+
+        background:
+          linear-gradient(#fff,#fff),
+          linear-gradient(#fff,#fff),
+          transparent;
+      }
+      .soil-square.buy[data-cost=""] {
+        display: none;
+      }
+
+      .soil-square.buy:hover {
+        background: transparent;
+        cursor: pointer;
+      }
+      .soil-square.buy:hover::before {
+          content: attr(data-cost);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        margin-right: .25rem;
+      }
+      .soil-square.buy:hover::after {
+        content: '🥬';
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        margin-left: .25rem;
+      }
+
+      .soil-square.buy,
+      .soil-square.buy:hover {
+        background-position:center;
+        background-size: 1rem 2px,2px 1rem;
+        background-repeat:no-repeat;
+      }
+
+      .purchase-blip {
+        position: absolute;
+        width: 0;
+        height: 0;
+        background: radial-gradient(circle at center, #0f0, transparent 70%);
+        transition-property: left, top;
+        transition-duration: 1s;
+        transition-timing-function: ease-in-out;
+        animation: purchase-disappear 1s;
+        animation-iteration-count: 1;
+        pointer-events: none;
+        z-index: 999;
+      }
+
+      @keyframes fade-in {
+        0%,
+        50% {
+          opacity: 0;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+
+      @keyframes purchase-disappear {
+        0% {
+          width: 8rem;
+          height: 8rem;
+        }
+        90% {
+          width: 0.25rem;
+          height: 0.25rem;
+        }
+      }
+
+      #modal {
+        display: none;
+        width: 100%;
+        height: 100%;
+        background: #3338;
+      }
+
+      #modal.visible {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-around;
+      }
+
+
+      #modal button {
+        margin: 0.25rem;
+      }
+      #modal-left[data-text=""] {
+        display: none;
+      }
+      #modal-left::after {
+        content: attr(data-text);
+      }
+      #modal-right::after {
+        content: attr(data-text);
+      }
+
+      .market-item-list {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        max-height: 14rem;
+        overflow: scroll;
+      }
+
+      .market-item {
+        text-align: left;
+        border: 1px solid green;
+        border-radius: 0.5rem;
+        display: grid;
+        margin: 0.25rem;
+        padding: 0.25rem;
+        min-height: 4rem;
+        vertical-align: center;
+        grid-template-areas:
+          "T T C"
+          "D D D";
+        opacity: 0;
+        transition: opacity 2s;
+      }
+
+      .market-item.affordable {
+        background-color: #121;
+      }
+
+      .market-item.purchased {
+        border-color: black;
+        background: #333;
+        opacity: 0.25;
+      }
+
+      .market-item.affordable:not(.purchased):hover {
+        background: #555;
+        cursor: pointer;
+      }
+
+      .market-item-title,
+      .market-item-cost,
+      .market-item-description {
+        margin: 0;
+        user-select: none;
+      }
+
+      .market-item-title {
+        grid-area: T;
+        font-weight: bold;
+        font-size: 1rem;
+      }
+      .market-item.purchased .market-item-cost::before {
+        content: attr(data-icon);
+      }
+      .market-item-cost {
+        grid-area: C;
+        text-align: right;
+      }
+      .market-item:not(.purchased) .market-item-cost::before {
+        content: attr(data-cost);
+        padding-right: 0.25rem;
+      }
+      .market-item:not(.purchased) .market-item-cost::after {
+        content: "🥬";
+        padding-right: 0.25rem;
+      }
+      .market-item-description {
+        grid-area: D;
+        font-size: 1rem;
+      }
+
+      .market-item:not(.purchased) .market-item-description {
+        color: lightgray
+      }
+
+      /* Only show the next x available upgrades */
+      .market-item:not(.visible) {
+        display: none;
+      }
+      .market-item:not(.purchased).visible {
+        opacity: 1;
+      }
+      #workers[data-icon=""] {
+        display: none;
+      }
+      #workers::before {
+        content: attr(data-amount);
+        color: white;
+        margin-right: 2rem;
+      }
+      #workers[data-icon="1"]::after {
+        content: '👩‍🌾';
+      }
+      #workers[data-icon="2"]::after {
+        content: '👨‍🌾'
+      }
+
+      #workerWrapper {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        grid-template-rows: 1fr;
+      }
+      #workerWrapper:not(.visible) {
+        display: none;
+      }
+      #workers {
+        grid-column: 2;
+        margin: 0;
+      }
+      #workers-recruit {
+        width: 6rem;
+        height: 3rem;
+        background: transparent;
+        border: 1px solid white;
+        color: white;
+        border-radius: 0.5rem;
+        outline: none;
+
+        margin: auto;
+        vertical-align: center;
+        align-self: center;
+      }
+      #workers-recruit:hover {
+        color: transparent;
+        background: #333;
+        width: 6rem;
+        height: 3rem;
+        cursor: pointer;
+        font-size: 1rem;
+      }
+      #workers-recruit:not(.visible) {
+        display: none;
+      }
+
+      #workers-recruit:hover::before {
+        content: attr(data-cost);
+        color: white;
+      }
+      #workers-recruit:hover::after {
+        content: '🥬';
+        color: white;
+      }
+
+      html.crazy {
+        background: #311;
+        transition: background 5s;
+      }
+      html.crazy.united {
+        background: #131;
+      }
+
+      .endleaf {
+        position: absolute;
+        opacity: 0;
+        animation: endleaf-anim 3s;
+        user-select: none;
+        pointer-events: none;
+        display: flex;
+        justify-content: center;
+        width: 1px;
+        height: 1px;
+      }
+
+      @keyframes endleaf-anim {
+        0% {
+          opacity: 0;
+        }
+        5%,
+        80% {
+          opacity: 1;
+        }
+      }
+
+      .endmessage:not(.visible) {
+        display: none;
+      }
+
+      a,
+      a:visited {
+        color: cyan;
+      }
+
+      #withbonusexplainer[data-message=""] {
+        display: none;
+      }
+      #withbonusexplainer::after {
+        content: attr(data-message);
+      }
+    </style>
+    <title>KL farmer</title>
+  </head>
+  <body>
+    <script src="chs.js"></script>
+    <script src="core.js"></script>
+    <noscript>You need to enable JavaScript to play this game.</noscript>
+    <div id="root">
+      <div class="consolewrapper">
+        <textarea id="console" rows="8" readonly></textarea>
+        <div id="modal" class="">
+            <button id="modal-left" data-text=""></button>
+            <button id="modal-right" data-text=""></button>
+        </div>
+      </div>
+
+      <div id="stats" class="root-ui-elem">
+        <p id="currency" data-amount="0">🥬</p>
+        <div id="workerWrapper">
+          <p id="workers" data-amount="1" data-icon="1"></p>
+          <button id="workers-recruit" data-cost="10000">+</button>
+        </div>
+      </div>
+      <div id="garden" class="root-ui-elem">
+        <div class="soil-square plant" data-growth="0"></div>
+        <div class="soil-square plant" data-growth="0"></div>
+        <div class="soil-square plant" data-growth="0"></div>
+        <div class="soil-square plant" data-growth="0"></div>
+
+        <div class="soil-square plant" data-growth="0"></div>
+        <div class="soil-square plant" data-growth="0"></div>
+        <div class="soil-square plant" data-growth="0"></div>
+        <div class="soil-square plant" data-growth="0"></div>
+
+        <div class="soil-square buy" data-cost=""></div>
+      </div>
+      <div id="upgrades" class="root-ui-elem">
+        <div class="market-item-list">
+        </div>
+      </div>
+    </div>
+
+    <div class="endmessage endelement">
+      <h1>Thank you for playing!</h1>
+      <p>I hope you enjoyed this short incremental experience dedicated to kale 🥬</p>
+      <p>
+        This game is written in two different languages. <br>
+        Roughly 20% is plain old JavaScript. <br>
+        The rest is "KL" (pronounced "kale" 😉), a new programming language I've been working on for a few years.
+      </p>
+      <p>
+        You can read about KL in the <a target="_blank" href="https://www.kevlanche.com/kl/">KL Docs</a>
+      </p>
+      <p>
+        This game was made almost entirely on stream over at <a target="_blank" href="https://www.twitch.com/Kevlanche">twitch.tv/Kevlanche</a>. Come by and say hi!
+      </p>
+      <p>
+        You beat the game in <span id="time-min">X minutes</span> and <span id="time-sec">Y seconds</span><span id="withbonusexplainer" data-message=""></span>.
+      </p>
+      <p>
+        By beating the game and reaching the new planet, you have permanently increased crop value by +1.
+        <button id="playagain">Click here to play again</button>
+      </p>
+    </div>
+    <script type="text/javascript" src="bundle.js" ></script>
+<!--客服 开始-->
+<script src="//g8hh.github.io/static/js/jquery.min.js"></script>
+<link rel="stylesheet" href="//g8hh.github.io/static/css/kf.css" type="text/css" media="screen" charset="utf-8">
+<script src="//g8hh.github.io/static/js/kf.js"></script>
+<!-- 客服 结束 -->
+<!--站长统计-->
+    <div style="display: none">
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?828597e93cee632465679b7ef35edfd5";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>    </div>
+  </body>
+</html>
